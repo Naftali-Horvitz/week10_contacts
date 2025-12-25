@@ -1,14 +1,13 @@
 import mysql.connector
-from moduls import *
+from modules import *
 import os
 from dotenv import load_dotenv
 load_dotenv()
 
-password = os.getenv("PASSWORD")
-host = os.getenv("HOST", "127.0.0.1")
+password = os.getenv("DB_PASSWORD")
+host = os.getenv("DB_HOST", "127.0.0.1")
 db_name = os.getenv("DB_NAME")
-port = os.getenv("PORT")
-user = os.getenv("USER")
+user = os.getenv("DB_USER")
 
 
 
@@ -51,31 +50,36 @@ class DataInteractor:
             raise e 
     
     def update_contact(self, id: int, contact):
-        cursor = self.cnx.cursor()
-        query = f'"UPDATE contacts SET"'
+        try:
+            cursor = self.cnx.cursor()
+            query = f'"UPDATE contacts SET"'
+            for k , v in contact.items():
+                if v != None:
+                    query = f"UPDATE contacts SET {k}=%s WHERE id=%s"
+                    cursor.execute(query, (v, id,))
+            if cursor.rowcount == 0:
+                self.cnx.rollback()
+                return {"message": "id not found"}
+            self.cnx.commit()
+            return {"message": "Contact update successfully"}
+        except mysql.connector.Error as e:
+            raise e
+        finally:
+            cursor.close()
         
-        for k , v in contact.items():
-            if v != None:
-                query = f"UPDATE contacts SET {k}=%s WHERE id=%s"
-                cursor.execute(query, (v, id,))
-        self.cnx.commit()
-
-        # cursor.execute(
-        # """
-        # UPDATE contacts
-        # SET first_name=%s, last_name=%s, phone_number=%s
-        # WHERE id=%s
-        # """,
-        # (contact.first_name, contact.last_name, contact.phone_number, id))
-        cursor.close()
-        return {"message": "Contact update successfully"}
-
+        
     def del_contact(self, id: int):
-        cursor = self.cnx.cursor()
-        cursor.execute("DELETE FROM contacts WHERE id=%s",(id,))
-        self.cnx.commit()
-        cursor.close()
-        return {"message": "Contact delete successfully"}
-
-
+        try:
+            cursor = self.cnx.cursor()
+            cursor.execute("DELETE FROM contacts WHERE id=%s",(id,))
+            if cursor.rowcount == 0:
+                self.cnx.rollback()
+                return {"message": "id not found"}
+            self.cnx.commit()
+            cursor.close()
+            return {"message": "Contact delete successfully"}
+        except mysql.connector.Error as e:
+            raise e
+        finally:
+            cursor.close()
 

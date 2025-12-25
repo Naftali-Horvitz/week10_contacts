@@ -1,7 +1,11 @@
 from fastapi import FastAPI
 from data_interactor import *
 import uvicorn
+import os
+from dotenv import load_dotenv
+load_dotenv()
 
+in_port = int(os.getenv("IN_PORT"))
 
 db_crud = DataInteractor()
 
@@ -26,4 +30,4 @@ async def delete_contact(id: int):
     return db_crud.del_contact(id)
 
 if __name__ == "__main__":
-    uvicorn.run("main:app", host="0.0.0.0", port=8000, reload=True)
+    uvicorn.run("main:app", host="0.0.0.0", port=in_port, reload=True)
